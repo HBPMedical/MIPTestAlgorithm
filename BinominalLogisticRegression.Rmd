@@ -1,0 +1,90 @@
+---
+title: "Binominal logistic regression"
+output: html_notebook
+---
+
+# Local calculation (single node)
+
+## Setup environment and load dataset
+
+- load library, dataset and build new specific dataset for Binominal logistic regression.
+
+```{r message=F}
+library(tidyverse)
+library(jmv)
+
+rawData <- read_csv("Data/desd-synthdata.csv")
+df_BLR <- rawData %>%
+  select(
+    gender, alzheimerbroadcategory,
+    agegroup, minimentalstate,
+    lefthippocampus, righthippocampus, 
+    leftententorhinalarea, rightententorhinalarea, 
+    brainstem 
+    ) %>%
+  drop_na() %>%
+  filter(alzheimerbroadcategory == 'CN' | alzheimerbroadcategory == 'AD')
+
+write_csv(df_BLR, "Data/df_BLR.csv")
+```
+
+- plot some variables we want to use just to see how theu look <br>
+Left hippocampus volume seems to be a poor predictor of AD
+
+```{r}
+df_BLR %>%
+  mutate(BinominalA = ifelse(alzheimerbroadcategory == "CN", 1, 0)) %>%
+  ggplot(aes(lefthippocampus, BinominalA)) +
+  geom_point(alpha = .15) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial")) +
+  ggtitle("Binominal logistic regression model fit") +
+  xlab("left hippocampus volume") +
+  ylab("Probability of Alzheimer") +
+  theme_bw() 
+```
+
+Minimal mental state seems to be better
+
+```{r}
+df_BLR %>%
+  mutate(BinominalA = ifelse(alzheimerbroadcategory == "CN", 1, 0)) %>%
+  ggplot(aes(minimentalstate, BinominalA)) +
+  geom_point(alpha = .15) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial")) +
+  ggtitle("Binominal logistic regression model fit") +
+  xlab("minimentalstate") +
+  ylab("Probability of Alzheimer") +
+  theme_bw() 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

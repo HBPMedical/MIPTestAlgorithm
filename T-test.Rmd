@@ -1,0 +1,124 @@
+---
+title: "T-Test testing"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+
+This test series is intended to cover the three types of use of the T-Test without testing the limitations of these functions. However, we also test few different options that can influence the calculations. 
+The complete list of parameters can be found here:
+- INDEPENDENT SAMPLES T-TEST: https://www.jamovi.org/jmv/ttestis.html 
+- PAIRED SAMPLES T-TEST: https://www.jamovi.org/jmv/ttestps.html
+- ONE SAMPLE T-TEST: https://www.jamovi.org/jmv/ttestones.html
+<br>
+We propose to test only necessary options first knowing that some options not tested yet should be added and tested in the futur...
+
+# Local calculation (single node)
+
+## Setup environment and load dataset
+
+```{r message=F}
+library(tidyverse)
+library(jmv)
+
+df_TT <- read_csv("Data/desd-synthdata.csv", 
+    col_types = cols(gender = col_factor(levels = c("M", 
+        "F"))))
+```
+
+
+## Test #1: independent samples T-Test
+In this test, we want to know if the volume of the female's left hippocampus is different from that of the male. 
+
+- We check if the means are different.
+
+```{r}
+ttestIS(
+  formula = lefthippocampus ~ gender, 
+  data = df_TT,
+  hypothesis = 'different',
+  effectSize = T
+  )
+```
+
+
+- We check if the mean volumes are greater for men than for women.
+
+```{r}
+ttestIS(
+  formula = lefthippocampus ~ gender, 
+  data = df_TT,
+  hypothesis = 'oneGreater',
+  meanDiff = T,
+  ci = T,
+  effectSize = T
+  )
+```
+
+
+
+## Test #2: paired samples T-Test
+In this test, we consider two paired continuous variables for which we want to know if their two means are different.
+
+```{r}
+ttestPS(
+  data = df_TT, 
+  pairs = list(list(i1 = 'lefthippocampus', i2 = 'righthippocampus')),
+  effectSize = T
+)
+```
+
+## Test #3: Comparison with a reference value
+In this test, we compare the mean of the left and right hippocampus volumes separetely, with a reference value 3. 
+
+```{r}
+ttestOneS(
+  data = df_TT, 
+  vars = vars(lefthippocampus, righthippocampus),
+  testValue = 3.)
+```
+
+# Federated calculation
+
+In this section, we must repeat the previous tests by splitting the data set into three subsets of data of different sizes.
+
+
+
+```{r}
+dataset0 <- df_TT %>%
+  select(c("lefthippocampus", "alzheimerbroadcategory", "gender", "agegroup")) %>%
+  drop_na() 
+
+dataset1 <- dataset0 %>%
+  dplyr::slice(1:225) %>%
+  mutate(dataset = "dataset1")
+write_csv(dataset1, "Data/dataset1.csv")
+
+dataset2 <- dataset0 %>%
+  dplyr::slice(226:426) %>%
+  mutate(dataset = "dataset2")
+write_csv(dataset2, "Data/dataset2.csv")
+
+dataset3 <- dataset0 %>%
+  dplyr::slice(427:718) %>%
+  mutate(dataset = "dataset3")
+write_csv(dataset3, "Data/dataset3.csv")
+
+dataset0 <- rbind(dataset1, dataset2, dataset3)
+write_csv(dataset0, "Data/dataset_0.csv")
+
+dataset0 %>%
+  ggplot(aes(x = lefthippocampus, color = gender, fill = gender)) + 
+  geom_histogram(bins = 30, alpha = 0.25, position = "identity") + 
+  facet_grid(. ~ dataset) +
+  theme_bw() 
+```
+
+
+
+
+
+
+

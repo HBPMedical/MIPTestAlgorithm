@@ -1,0 +1,278 @@
+---
+title: "ANOVA testing Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+In this notebook, we produce ANOVA analysis of several data sets for validation purposes. We evaluate separetely each type of ANOVA. As discissued previously ANOV type I is optional and can be ignore. The first part tests balanced data whereas the second part test unbalanced data. In the MIP we have to deal with unbalanced data.  
+<br>
+the results of anova must contain at least F-statistic, p_value, eta-squared and partial eta-squared for publications. But it is usual to display sum of the squares and the mean sum of the squares in a table format. 
+
+
+# Local calculation (single node)
+All this test are runing with a single dataset. 
+
+## Setup environment and load dataset
+
+The dependent variable is centered to calculate eta squared and partial eta squared. Centering has no influence on the calculation of other items, p, F, sumsq, ...
+
+```{r message = F}
+library(tidyverse)
+library(jmv)
+
+# load balanced data 
+rawDataB <- read_delim("./Data/data_ANOVA_Balanced_with_inter_V1V2.csv", ";") %>%
+  mutate(
+    var_I1 = as.factor(var_I1),
+    var_I2 = as.factor(var_I2),
+    var_I3 = as.factor(var_I3)
+    ) 
+
+rawDataB
+```
+
+## Tests With Balanced data sets
+
+In this series we use spacific balanced dataset and evaluate all the three ANOVA tyypes. 
+
+- Test the 3 main effects and all the interactions with type I ANOVA. 
+
+```{r}
+jmv::ANOVA(
+  formula   = var_D ~ var_I1*var_I2*var_I3, 
+  data      = rawDataB,
+  ss        = 1,
+ effectSize = c('eta', 'partEta')
+  )
+```
+
+- Test the 3 main effects and all the interactions with type II ANOVA. 
+
+```{r}
+# create linear model for balanced data
+jmv::ANOVA(
+  formula   = var_D ~ var_I1*var_I2*var_I3, 
+  data      = rawDataB,
+  ss        = 2,
+ effectSize = c('eta', 'partEta')
+  )
+```
+
+- Test the 3 main effects and all the interactions with type III ANOVA. 
+
+```{r}
+jmv::ANOVA(
+  formula   = var_D ~ var_I1*var_I2*var_I3, 
+  data      = rawDataB,
+  ss        = 1,
+  effectSize = c('eta', 'partEta')
+  )
+```
+
+Remark : In a balanced data set, the result of Anova does not depend on how the sums of the squares are calculated. Hence, the three results are equal!
+It is not the case in unbalanced data sets.
+
+
+
+## With unbalanced data sets
+
+In this notebook, we produce ANOVA analysis of several data sets for validation purposes. We evaluate separetely each type of ANOVA. As discissued previously ANOV type I is optional and can be ignore.
+
+Import Balanced data
+```{r message = F}
+rawDataUB <- read_delim("./Data/data_ANOVA_Unbalanced_with_inter_V1V2.csv", ";") 
+rawDataUB <- rawDataUB %>%
+  mutate(
+    var_I1 = as.factor(var_I1),
+    var_I2 = as.factor(var_I2),
+    var_I3 = as.factor(var_I3)
+    )
+rawDataUB
+```
+
+- Test the 3 main effects and all the interactions with type I ANOVA. 
+
+```{r}
+# create linear model for balanced data
+jmv::ANOVA(
+  formula   = var_D ~ var_I1*var_I2*var_I3, 
+  data      = rawDataUB,
+  ss        = 1,
+  effectSize = c('eta', 'partEta')
+  )
+```
+
+- Test the 3 main effects and all the interactions with type II ANOVA. 
+
+```{r}
+jmv::ANOVA(
+  formula   = var_D ~ var_I1*var_I2*var_I3, 
+  data      = rawDataUB,
+  ss        = 2,
+  effectSize = c('eta', 'partEta')
+  )
+```
+
+- Test the 3 main effects and all the interactions with type III ANOVA. 
+
+```{r}
+jmv::ANOVA(
+  formula   = var_D ~ var_I1*var_I2*var_I3, 
+  data      = rawDataUB,
+  ss        = 3,
+  effectSize = c('eta', 'partEta')
+  )
+```
+
+
+
+
+- Test the 3 main effects only with type III ANOVA. 
+
+```{r}
+# create linear model for balanced data with contrast == sum
+jmv::ANOVA(
+  formula   = var_D ~ var_I1 + var_I2 + var_I3, 
+  data      = rawDataUB,
+  ss        = 3,
+  effectSize = c('eta', 'partEta')
+  )
+```
+
+
+
+### With data similar to our target
+
+We now test some 'real life' like configurations. We only test type II and III ANOVAs because in the MIP environment the data are very unbalanced and type I is inappropriate. 
+
+```{r}
+df0 <- read_csv("Data/dataset_0.csv") %>%
+  mutate(
+    agegroup                = as.ordered(agegroup), 
+    alzheimerbroadcategory  = as.factor(alzheimerbroadcategory), 
+    dataset                 = as.factor(dataset), 
+    gender                  = as.factor(gender)
+    )
+df0
+```
+
+
+
+### ANOVA testing
+
+- without interaction and 2 variables - type III
+
+```{r}
+jmv::ANOVA(
+  formula   = lefthippocampus ~ alzheimerbroadcategory + gender, 
+  data      = df0,
+  ss        = 3,
+  effectSize = c('eta', 'partEta')
+  )
+```
+
+- without interaction and 2 variables - type II
+
+```{r}
+jmv::ANOVA(
+  formula   = lefthippocampus ~ alzheimerbroadcategory + gender, 
+  data      = df0,
+  ss        = 2,
+  effectSize = c('eta', 'partEta')
+  )
+```
+
+
+- with interaction and 2 variables - type III
+
+```{r}
+jmv::ANOVA(
+  formula = lefthippocampus ~ alzheimerbroadcategory * gender, 
+  data = df0,
+  ss = 3,
+  effectSize = c('eta', 'partEta')
+  )
+```
+
+- with interaction and 2 variables - type II
+
+```{r}
+jmv::ANOVA(
+  formula = lefthippocampus ~ alzheimerbroadcategory * gender, 
+  data = df0,
+  ss = 2,
+  effectSize = c('eta', 'partEta')
+  )
+```
+
+- without interaction and 3 variables - type III
+
+```{r}
+jmv::ANOVA(
+  formula = lefthippocampus ~ alzheimerbroadcategory + gender + agegroup, 
+  data = df0,
+  ss = 3,
+  effectSize = c('eta', 'partEta')
+  )
+```
+
+- without interaction and 3 variables - type II
+  
+```{r}
+jmv::ANOVA(
+  formula = lefthippocampus ~ alzheimerbroadcategory + gender + agegroup, 
+  data = df0,
+  ss = 2,
+  effectSize = c('eta', 'partEta')
+  )
+```
+
+- with 1 interaction and 3 variables - type III
+
+```{r}
+jmv::ANOVA(
+  formula = lefthippocampus ~ alzheimerbroadcategory * gender + agegroup, 
+  data = df0,
+  ss = 3,
+  effectSize = c('eta', 'partEta')
+  )
+```
+
+- with 1 interaction and 3 variables - type II
+
+```{r}
+jmv::ANOVA(
+  formula = lefthippocampus ~ alzheimerbroadcategory * gender + agegroup, 
+  data = df0,
+  ss = 2,
+  effectSize = c('eta', 'partEta')
+  )
+```
+
+- with full interaction and 3 variables - type III
+
+```{r}
+jmv::ANOVA(
+  formula = lefthippocampus ~ alzheimerbroadcategory * gender * agegroup, 
+  data = df0,
+  ss = 3,
+  effectSize = c('eta', 'partEta')
+  )
+```
+
+
+- with full interaction and 3 variables - type II
+
+```{r}
+jmv::ANOVA(
+  formula = lefthippocampus ~ alzheimerbroadcategory * gender * agegroup, 
+  data = df0,
+  ss = 2,
+  effectSize = c('eta', 'partEta')
+  )
+```
+
+
+
+
