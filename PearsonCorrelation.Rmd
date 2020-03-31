@@ -1,0 +1,342 @@
+---
+title: "PearsonCorrelation"
+output:
+  prettydoc::html_pretty:
+    toc       : true
+    df_print  : paged
+    theme     : Cayman
+    fig_retina : true
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Setup analysis environment
+
+Load libraries "tidyverse" and "jmv" <br>
+
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(jmv)
+```
+
+Load dataset "desd-synthdata.csv" and check number of rows = 1000.
+
+```{r message=F}
+rawData <- read_csv("Data/desd-synthdata.csv")
+```
+
+## Test the correlation between two highly correlated continuous variables
+
+```{r echo=FALSE, message=FALSE}
+
+df_PC1 <- rawData %>%
+  select(
+    righthippocampus,
+    lefthippocampus) %>%
+  drop_na() 
+head(df_PC1)
+```
+
+```{r}
+corrPears_1 <- jmv::corrMatrix(
+    data = df_PC1,
+    pearson = TRUE,
+    vars = vars(lefthippocampus, righthippocampus),
+    flag = TRUE,
+    ci = TRUE,
+    plots = TRUE,
+    plotDens = TRUE,
+    plotStats = TRUE)
+corrPears_1$matrix
+```
+
+```{r}
+corrPears_1$plot
+```
+
+## Test the correlation between two weakly correlated continuous variables
+
+
+### Positive correlation
+
+```{r echo=FALSE, message=FALSE}
+
+df_PC2 <- rawData %>%
+  select(
+    lefthippocampus,
+    opticchiasm
+    ) %>%
+  drop_na() 
+
+head(df_PC2)
+```
+
+```{r}
+corrPears_2 <- jmv::corrMatrix(
+    data = df_PC2,
+    pearson = TRUE,
+    vars = vars(lefthippocampus, opticchiasm),
+    flag = TRUE,
+    ci = TRUE,
+    plots = TRUE,
+    plotDens = TRUE,
+    plotStats = TRUE)
+corrPears_2$matrix
+```
+
+```{r}
+corrPears_2$plot
+```
+
+
+### Negative correlation
+```{r echo=FALSE, message=FALSE}
+
+df_PC2.1 <- rawData %>%
+  select(
+    subjectage,
+    minimentalstate
+    ) %>%
+  drop_na() 
+
+head(df_PC2.1)
+```
+
+```{r}
+corrPears_2.1 <- jmv::corrMatrix(
+    data = df_PC2.1,
+    pearson = TRUE,
+    vars = vars(subjectage, minimentalstate),
+    flag = TRUE,
+    ci = TRUE,
+    plots = TRUE,
+    plotDens = TRUE,
+    plotStats = TRUE)
+corrPears_2.1$matrix
+```
+
+```{r}
+corrPears_2.1$plot
+```
+
+> Comment: We should not use Pearson correlation in this case since minimentalstate is not normaly distributed.
+
+## Test the correlation between two weakly correlated continuous variables with different magnitude
+
+### With data similar to MIP
+
+```{r echo=FALSE, message=FALSE}
+
+df_PC3 <- rawData %>%
+  select(
+    opticchiasm,
+    subjectage
+    ) %>%
+  drop_na() 
+
+head(df_PC3)
+```
+
+```{r}
+corrPears_3 <- jmv::corrMatrix(
+    data = df_PC3,
+    pearson = TRUE,
+    vars = vars(subjectage, opticchiasm),
+    flag = TRUE,
+    ci = TRUE,
+    plots = TRUE,
+    plotDens = TRUE,
+    plotStats = TRUE)
+corrPears_3$matrix
+```
+
+```{r}
+corrPears_3$plot
+```
+
+### With extreme data 
+
+```{r}
+df_PC3.1 <- read_csv("Data/data_pr1.csv")
+df_PC3.1
+```
+ 
+#### By changing the magnitude only
+```{r}
+corrPears_3.1 <- jmv::corrMatrix(
+    data = df_PC3.1,
+    pearson = TRUE,
+    vars = vars(var1, var2),
+    flag = TRUE,
+    ci = TRUE,
+    plots = TRUE,
+    plotDens = TRUE,
+    plotStats = TRUE)
+corrPears_3.1$matrix
+```
+
+#### By changing the magnitude and adding some noise
+```{r}
+corrPears_3.2 <- jmv::corrMatrix(
+    data = df_PC3.1,
+    pearson = TRUE,
+    vars = vars(var3, var4),
+    flag = TRUE,
+    ci = TRUE,
+    plots = TRUE,
+    plotDens = TRUE,
+    plotStats = TRUE)
+corrPears_3.2$matrix
+```
+
+## Test the correlation between three highly correlated continuous variables
+
+```{r echo=FALSE, message=FALSE}
+
+df_PC4 <- rawData %>%
+  select(
+    righthippocampus,
+    lefthippocampus,
+    leftententorhinalarea
+    ) %>%
+  drop_na() 
+head(df_PC4)
+```
+
+```{r}
+corrPears_4 <- jmv::corrMatrix(
+    data = df_PC4,
+    pearson = TRUE,
+    vars = vars(righthippocampus, lefthippocampus, leftententorhinalarea),
+    flag = TRUE,
+    ci = TRUE,
+    plots = TRUE,
+    plotDens = TRUE,
+    plotStats = TRUE)
+corrPears_4$matrix
+```
+
+```{r}
+corrPears_4$plot
+```
+
+## Test the correlation between two highly correlated continuous variables and one weakly correlated
+
+```{r echo=FALSE, message=FALSE}
+
+df_PC5 <- rawData %>%
+  select(
+    righthippocampus,
+    lefthippocampus,
+    opticchiasm
+    ) %>%
+  drop_na() 
+head(df_PC5)
+```
+
+```{r}
+corrPears_5 <- jmv::corrMatrix(
+    data = df_PC5,
+    pearson = TRUE,
+    vars = vars(righthippocampus, lefthippocampus, opticchiasm),
+    flag = TRUE,
+    ci = TRUE,
+    plots = TRUE,
+    plotDens = TRUE,
+    plotStats = TRUE)
+corrPears_5$matrix
+```
+
+```{r}
+corrPears_5$plot
+```
+
+## Test the correlation between two positively correlated continuous variables and one negatively correlated
+
+```{r echo=FALSE, message=FALSE}
+
+df_PC6 <- rawData %>%
+  select(
+    lefthippocampus,
+    subjectage,
+    opticchiasm
+    ) %>%
+  drop_na() 
+head(df_PC6)
+```
+
+```{r}
+corrPears_6 <- jmv::corrMatrix(
+    data = df_PC6,
+    pearson = TRUE,
+    vars = vars(lefthippocampus, subjectage, opticchiasm),
+    flag = TRUE,
+    ci = TRUE,
+    plots = TRUE,
+    plotDens = TRUE,
+    plotStats = TRUE)
+corrPears_6$matrix
+```
+
+```{r}
+corrPears_6$plot
+```
+
+#### Change predictor order
+
+```{r}
+corrPears_7 <- jmv::corrMatrix(
+    data = df_PC6,
+    pearson = TRUE,
+    vars = vars(subjectage, lefthippocampus, opticchiasm),
+    flag = TRUE,
+    ci = TRUE,
+    plots = TRUE,
+    plotDens = TRUE,
+    plotStats = TRUE)
+corrPears_7$matrix
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
