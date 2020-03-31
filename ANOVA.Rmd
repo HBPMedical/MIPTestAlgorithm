@@ -1,8 +1,11 @@
 ---
 title: "ANOVA testing Notebook"
 output:
-  html_document:
-    df_print: paged
+  prettydoc::html_pretty:
+    toc       : true
+    df_print  : paged
+    theme     : Cayman
+    fig_retina : true
 ---
 
 In this notebook, we produce ANOVA analysis of several data sets for validation purposes. We evaluate separetely each type of ANOVA. As discissued previously ANOV type I is optional and can be ignore. The first part tests balanced data whereas the second part test unbalanced data. In the MIP we have to deal with unbalanced data.  
