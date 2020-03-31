@@ -1,0 +1,939 @@
+---
+title: "Linear model testing Notebook"
+output:
+  prettydoc::html_pretty:
+    toc       : true
+    df_print  : paged
+    theme     : Cayman
+    fig_retina : true
+---
+
+
+### Goal
+With this notebook, we provide test scenarios for the linear regression model. We consider successively the case of categorical regressors, the case of continuous regressors, and then the case mixing the two types of regressors together. 
+
+For each test, we provide the data, the model and the results. In tests including interaction terms, we use the same model as in tests without interaction terms.
+
+
+
+
+
+# Local calculation (single node)
+
+## Setup environment and load data
+
+Load libraries "tidyverse" and "jmv" <br>
+I use the "jmv" package instead of standard packages like "lm" or "lme4" for mixed effects models because it provides a classic output format and good results of course!
+
+```{r message=FALSE, include=FALSE}
+library(tidyverse)
+```
+
+```{r echo = F}
+# Create simple coding contrasts
+simpleCodingContrast <- function(variable) {
+  levelsVar <- levels(variable)
+  Nlevel <- length(levelsVar)
+  contrastTreatment<-contr.treatment(Nlevel)
+  contrast <- contrastTreatment - matrix(rep(1/Nlevel, Nlevel*(Nlevel-1)), ncol = Nlevel-1)
+  rownames(contrast) <- levelsVar
+  colnames(contrast) <-  levelsVar[-1]
+  contrast
+}
+
+# simpleCodingContrast(relevel(df_LR11$alzheimerbroadcategory, ref = "CN"))
+```
+
+
+Load data "desd-synthdata.csv" and check number of rows = 1000.
+
+```{r message=F}
+rawData <- read_csv("Data/desd-synthdata.csv")
+rawData
+```
+
+## Test linear regression with categorial regressors
+
+### Test 1.1: one categorical regressor
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **alzheimerbroadcategory** as a categorical predictor with 
+    - levels: **'AD', 'CN', 'Other'**
+    - ref: **'AD'**
+
+
+- data 
+
+```{r echo=FALSE, message=FALSE}
+df_LR11 <- rawData %>%
+  select(
+    lefthippocampus,
+    alzheimerbroadcategory) %>%
+  mutate(alzheimerbroadcategory = factor(alzheimerbroadcategory)) %>%
+  mutate(alzheimerbroadcategory = relevel(alzheimerbroadcategory, ref = "AD")) %>%
+  drop_na() 
+head(df_LR11)
+```
+
+- Analysis with dummy coding contrast
+
+```{r}
+df_LR11 %>%
+  lm(formula = lefthippocampus~alzheimerbroadcategory) %>%
+  summary()
+```
+
+- Analysis with simple coding contrast
+
+```{r}
+df_LR11 %>%
+  lm(formula = lefthippocampus~alzheimerbroadcategory, 
+     contrasts = list(alzheimerbroadcategory = simpleCodingContrast(df_LR11$alzheimerbroadcategory))) %>%
+  summary()
+```
+
+
+
+
+
+### Test 1.2: two categorical regressors without interaction
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **alzheimerbroadcategory** as a categorical predictor with 
+    - levels: **'AD', 'CN', 'Other'**
+    - ref: **'AD'**
+    
+  - **gender** as a categorical predictor with 
+    - levels: **'F', 'M'** 
+    - Ref: **'M'**
+
+
+- data 
+
+```{r echo=FALSE, message=FALSE}
+df_LR12 <- rawData %>%
+  select(
+    lefthippocampus,
+    alzheimerbroadcategory,
+    gender) %>%
+  mutate(alzheimerbroadcategory = factor(alzheimerbroadcategory)) %>%
+  mutate(alzheimerbroadcategory = relevel(alzheimerbroadcategory, ref = "AD")) %>%
+  mutate(gender                 = factor(gender)) %>%
+  mutate(gender                 = relevel(gender, ref = "M")) %>%
+  drop_na() 
+head(df_LR12)
+```
+
+- Analysis with dummy coding contrast
+
+```{r}
+df_LR12 %>%
+  lm(formula = lefthippocampus ~ alzheimerbroadcategory + gender) %>%
+  summary()
+```
+
+- Analysis with simple coding contrast
+
+```{r}
+df_LR12 %>%
+  lm(formula = lefthippocampus~ alzheimerbroadcategory + gender,
+     contrasts = list(
+       alzheimerbroadcategory = simpleCodingContrast(df_LR12$alzheimerbroadcategory),
+       gender                 = simpleCodingContrast(df_LR12$gender))) %>%
+  summary()
+```
+
+
+
+
+
+### Test 1.2b: two categorical regressors with interaction
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **alzheimerbroadcategory** as a categorical predictor with 
+    - levels: **'AD', 'CN', 'Other'**
+    - ref: **'AD'**
+    
+  - **gender** as a categorical predictor with 
+    - levels: **'F', 'M'** 
+    - Ref: **'M'**
+    
+  - And the interaction term **alzheimerbroadcategory x gender**
+
+
+- Analysis with dummy coding contrast
+
+```{r}
+df_LR12 %>%
+  lm(formula = lefthippocampus~alzheimerbroadcategory * gender) %>%
+  summary()
+```
+
+- Analysis with simple coding contrast
+
+```{r}
+df_LR12 %>%
+  lm(formula = lefthippocampus~ alzheimerbroadcategory * gender,
+     contrasts = list(
+       alzheimerbroadcategory = simpleCodingContrast(df_LR12$alzheimerbroadcategory),
+       gender                 = simpleCodingContrast(df_LR12$gender))) %>%
+  summary()
+```
+
+
+
+### Test 1.3: three categorical regressors without interaction
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **alzheimerbroadcategory** as a categorical predictor with 
+    - levels: **'AD', 'CN', 'Other'**
+    - ref: **'AD'**
+    
+  - **gender** as a categorical predictor with 
+    - levels: **'F', 'M'** 
+    - Ref: **'M'**
+    
+  - **agegroup**
+    - levels: **'-50y', '50-59y', '60-69y', '70-79y', '+80y'**
+    - Ref: **'+80y'**
+
+
+- data 
+
+```{r echo=FALSE, message=FALSE}
+df_LR13 <- rawData %>%
+  select(
+    lefthippocampus,
+    alzheimerbroadcategory,
+    gender,
+    agegroup) %>%
+  mutate(alzheimerbroadcategory = factor(alzheimerbroadcategory)) %>%
+  mutate(alzheimerbroadcategory = relevel(alzheimerbroadcategory, ref = "AD")) %>%
+  mutate(gender                 = factor(gender)) %>%
+  mutate(gender                 = relevel(gender, ref = "M")) %>%
+  mutate(agegroup               = factor(agegroup)) %>%
+  mutate(agegroup               = relevel(agegroup, ref = "+80y")) %>%
+  drop_na() 
+head(df_LR13)
+```
+
+- Analysis with dummy coding contrast
+
+```{r}
+df_LR13 %>%
+  mutate(gender = relevel(gender, ref = "M")) %>%
+  lm(formula = lefthippocampus~alzheimerbroadcategory + gender + agegroup) %>%
+  summary()
+```
+
+- Analysis with simple coding contrast
+
+```{r}
+df_LR13 %>%
+  mutate(gender = relevel(gender, ref = "M")) %>%
+  lm(formula = lefthippocampus~ alzheimerbroadcategory + gender + agegroup,
+     contrasts = list(alzheimerbroadcategory = simpleCodingContrast(df_LR13$alzheimerbroadcategory),
+                      gender = simpleCodingContrast(relevel(df_LR13$gender, ref = "M")),
+                      agegroup = simpleCodingContrast(df_LR13$agegroup))) %>%
+  summary()
+```
+
+
+
+
+
+### Test 1.3b: three categorical regressors with all interactions
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **alzheimerbroadcategory** as a categorical predictor with 
+    - levels: **'AD', 'CN', 'Other'**
+    - ref: **'AD'**
+    
+  - **gender** as a categorical predictor with 
+    - levels: **'F', 'M'** 
+    - Ref: **'M'**
+    
+  - **agegroup**
+    - levels: **'-50y', '50-59y', '60-69y', '70-79y', '+80y'**
+    - Ref: **'+80y'**
+
+  - And the interaction terms 
+    - **alzheimerbroadcategory x gender**
+    - **alzheimerbroadcategory x agegroup**
+    - **gender x agegroup**
+    - **alzheimerbroadcategory x gender x agegroup**
+  
+
+- Analysis with dummy coding contrast
+
+```{r}
+df_LR13 %>%
+  mutate(gender = relevel(gender, ref = "M")) %>%
+  lm(formula = lefthippocampus~alzheimerbroadcategory * gender * agegroup) %>%
+  summary()
+```
+
+
+
+- Analysis with simple coding contrast
+
+```{r}
+df_LR13 %>%
+  mutate(gender = relevel(gender, ref = "M")) %>%
+  lm(formula = lefthippocampus~ alzheimerbroadcategory * gender * agegroup,
+     contrasts = list(alzheimerbroadcategory = simpleCodingContrast(df_LR13$alzheimerbroadcategory),
+                      gender = simpleCodingContrast(relevel(df_LR13$gender, ref = "M")),
+                      agegroup = simpleCodingContrast(df_LR13$agegroup))) %>%
+  summary()
+```
+
+
+
+
+
+## Test linear regression with continuous regressors
+
+
+### Test 2.1: one continuous regressor 
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **csfglobal** as a continuous predictor 
+
+- data 
+
+```{r echo=FALSE, message=FALSE}
+df_LR21 <- rawData %>%
+  select(
+    lefthippocampus,
+    csfglobal) %>%
+  drop_na() 
+head(df_LR21)
+```
+
+
+- Analysis 
+
+```{r}
+df_LR21 %>%
+  lm(formula = lefthippocampus ~ csfglobal) %>%
+  summary()
+```
+
+
+
+
+
+### Test 2.2: two continuous regressors without interaction
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **opticchiasm** as first continuous predictor 
+  
+  - **minimentalstate** as second continuous predictor 
+  
+
+- data 
+
+```{r echo=FALSE, message=FALSE}
+df_LR22 <- rawData %>%
+  select(
+    lefthippocampus,
+    opticchiasm,
+    minimentalstate) %>%
+  drop_na() 
+head(df_LR22)
+```
+
+- Analysis 
+
+```{r}
+df_LR22 %>%
+  lm(formula = lefthippocampus ~ opticchiasm + minimentalstate) %>%
+  summary()
+```
+
+
+
+
+
+### Test 2.2b: two continuous regressors with interaction
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **opticchiasm** as first continuous predictor 
+  
+  - **minimentalstate** as second continuous predictor 
+  
+  - **opticchiasm x minimentalstate** as interaction term 
+
+
+- Analysis 
+
+```{r}
+df_LR22 %>%
+  lm(formula = lefthippocampus ~ opticchiasm * minimentalstate) %>%
+  summary()
+```
+
+
+
+
+
+### Test 2.3: three continuous regressors without interaction
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **opticchiasm** as first continuous predictor 
+  
+  - **minimentalstate** as second continuous predictor 
+  
+  - **subjectage** as third continuous predictor 
+  
+
+- data 
+
+```{r echo=FALSE, message=FALSE}
+df_LR23 <- rawData %>%
+  select(
+    lefthippocampus,
+    opticchiasm,
+    minimentalstate,
+    subjectage) %>%
+  drop_na() 
+head(df_LR23)
+```
+
+- Analysis 
+
+```{r}
+df_LR23 %>%
+  lm(formula = lefthippocampus ~ opticchiasm + minimentalstate + subjectage) %>%
+  summary()
+```
+
+
+
+
+
+### Test 2.3b: three continuous regressors with interaction
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **opticchiasm** as first continuous predictor 
+  
+  - **minimentalstate** as second continuous predictor 
+  
+  - **subjectage** as third continuous predictor 
+
+  - And the interaction terms 
+    - **opticchiasm x minimentalstate** 
+    - **opticchiasm x subjectage** 
+    - **minimentalstate x subjectage** 
+    - **opticchiasm x minimentalstate x subjectage** 
+
+
+- Analysis 
+
+```{r}
+df_LR23 %>%
+  lm(formula = lefthippocampus ~ opticchiasm * minimentalstate * subjectage) %>%
+  summary()
+```
+
+
+
+
+
+## Test linear regression with mixted categorical and continuous regressors
+
+
+### Test 3.1: one categorical and one continuous regressors without interaction
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **alzheimerbroadcategory** as a categorical predictor with 
+    - levels: **'AD', 'CN', 'Other'**
+    - ref: **'AD'**
+  
+  - **subjectage** as continuous predictor 
+
+
+- data 
+
+```{r echo=FALSE, message=FALSE}
+df_LR31 <- rawData %>%
+  select(
+    lefthippocampus,
+    alzheimerbroadcategory,
+    subjectage) %>%
+  mutate(alzheimerbroadcategory = factor(alzheimerbroadcategory)) %>%
+  mutate(alzheimerbroadcategory = relevel(alzheimerbroadcategory, ref = "AD")) %>%
+  drop_na() 
+head(df_LR31)
+```
+
+- Analysis with dummy coding contrast
+
+```{r}
+df_LR31 %>%
+  lm(formula = lefthippocampus ~ alzheimerbroadcategory + subjectage) %>%
+  summary()
+```
+
+- Analysis with simple coding contrast
+
+```{r}
+df_LR31 %>%
+  lm(formula = lefthippocampus~ alzheimerbroadcategory + subjectage,
+     contrasts = list(
+       alzheimerbroadcategory = simpleCodingContrast(df_LR31$alzheimerbroadcategory))) %>%
+  summary()
+```
+
+
+
+
+
+### Test 3.1b: one categorical and one continuous regressors with interaction
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **alzheimerbroadcategory** as a categorical predictor with 
+    - levels: **'AD', 'CN', 'Other'**
+    - ref: **'AD'**
+  
+  - **subjectage** as continuous predictor 
+
+  - **alzheimerbroadcategory x subjectage** as interaction terms 
+
+
+
+- Analysis with dummy coding contrast
+
+```{r}
+df_LR31 %>%
+  lm(formula = lefthippocampus ~ alzheimerbroadcategory * subjectage) %>%
+  summary()
+```
+
+- Analysis with simple coding contrast
+
+```{r}
+df_LR31 %>%
+  lm(formula = lefthippocampus~ alzheimerbroadcategory * subjectage,
+     contrasts = list(
+       alzheimerbroadcategory = simpleCodingContrast(df_LR31$alzheimerbroadcategory))) %>%
+  summary()
+```
+
+
+
+
+### Test 3.2: one categorical and two continuous regressors without interaction
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **alzheimerbroadcategory** as a categorical predictor with 
+    - levels: **'AD', 'CN', 'Other'**
+    - ref: **'AD'**
+  
+  - **subjectage** as first continuous predictor 
+  
+  - **opticchiasm** as second continuous predictor 
+
+
+- data 
+
+```{r echo=FALSE, message=FALSE}
+df_LR32 <- rawData %>%
+  select(
+    lefthippocampus,
+    alzheimerbroadcategory,
+    subjectage,
+    opticchiasm) %>%
+  mutate(alzheimerbroadcategory = factor(alzheimerbroadcategory)) %>%
+  mutate(alzheimerbroadcategory = relevel(alzheimerbroadcategory, ref = "AD")) %>%
+  drop_na() 
+head(df_LR32)
+```
+
+- Analysis with dummy coding contrast
+
+```{r}
+df_LR32 %>%
+  lm(formula = lefthippocampus ~ alzheimerbroadcategory + subjectage + opticchiasm) %>%
+  summary()
+```
+
+- Analysis with simple coding contrast
+
+```{r}
+df_LR32 %>%
+  lm(formula = lefthippocampus ~ alzheimerbroadcategory + subjectage + opticchiasm,
+     contrasts = list(
+       alzheimerbroadcategory = simpleCodingContrast(df_LR31$alzheimerbroadcategory))) %>%
+  summary()
+```
+
+
+
+
+
+### Test 3.2b: one categorical and two continuous regressors with interaction
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **alzheimerbroadcategory** as a categorical predictor with 
+    - levels: **'AD', 'CN', 'Other'**
+    - ref: **'AD'**
+  
+  - **subjectage** as first continuous predictor 
+  
+  - **opticchiasm** as second continuous predictor 
+
+  - And the interaction terms 
+    - **alzheimerbroadcategory x subjectage** 
+    - **alzheimerbroadcategory x opticchiasm** 
+    - **subjectage x opticchiasm** 
+    - **alzheimerbroadcategory x subjectage x opticchiasm** 
+
+
+
+- Analysis with dummy coding contrast
+
+```{r}
+df_LR32 %>%
+  lm(formula = lefthippocampus ~ alzheimerbroadcategory * subjectage * opticchiasm) %>%
+  summary()
+```
+
+- Analysis with simple coding contrast
+
+```{r}
+df_LR32 %>%
+  lm(formula = lefthippocampus ~ alzheimerbroadcategory * subjectage * opticchiasm,
+     contrasts = list(
+       alzheimerbroadcategory = simpleCodingContrast(df_LR31$alzheimerbroadcategory))) %>%
+  summary()
+```
+
+
+
+
+
+### Test 3.3: two categorical and one continuous regressors without interaction
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **alzheimerbroadcategory** as first categorical predictor with 
+    - levels: **'AD', 'CN', 'Other'**
+    - ref: **'AD'**
+    
+  - **gender** as a categorical predictor with 
+    - levels: **'F', 'M'** 
+    - Ref: **'M'**
+
+  - **subjectage** as first continuous predictor 
+  
+
+- data 
+
+```{r echo=FALSE, message=FALSE}
+df_LR33 <- rawData %>%
+  select(
+    lefthippocampus,
+    alzheimerbroadcategory,
+    subjectage,
+    gender) %>%
+  mutate(alzheimerbroadcategory = factor(alzheimerbroadcategory)) %>%
+  mutate(alzheimerbroadcategory = relevel(alzheimerbroadcategory, ref = "AD")) %>%
+  mutate(gender                 = factor(gender)) %>%
+  mutate(gender                 = relevel(gender, ref = "M")) %>%
+  drop_na() 
+head(df_LR33)
+```
+
+-- Analysis with dummy coding contrast
+
+```{r}
+df_LR33 %>%
+  lm(formula = lefthippocampus ~ alzheimerbroadcategory + gender + subjectage) %>%
+  summary()
+```
+
+- Analysis with simple coding contrast
+
+```{r}
+df_LR33 %>%
+  lm(formula = lefthippocampus ~ alzheimerbroadcategory + gender + subjectage,
+     contrasts = list(
+       alzheimerbroadcategory = simpleCodingContrast(df_LR31$alzheimerbroadcategory),
+       gender                 = simpleCodingContrast(relevel(df_LR33$gender, ref = "M")))) %>%
+  summary()
+```
+
+
+
+
+
+### Test 3.3b: two categorical and one continuous regressors with interaction
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **alzheimerbroadcategory** as first categorical predictor with 
+    - levels: **'AD', 'CN', 'Other'**
+    - ref: **'AD'**
+    
+  - **gender** as a categorical predictor with 
+    - levels: **'F', 'M'** 
+    - Ref: **'M'**
+
+  - **subjectage** as first continuous predictor 
+
+  - And the interaction terms 
+    - **alzheimerbroadcategory x subjectage** 
+    - **alzheimerbroadcategory x gender** 
+    - **subjectage x gender** 
+    - **alzheimerbroadcategory x subjectage x gender** 
+
+
+- Analysis with dummy coding contrast
+
+```{r}
+df_LR33 %>%
+  lm(formula = lefthippocampus ~ alzheimerbroadcategory * gender * subjectage) %>%
+  summary()
+```
+
+- Analysis with simple coding contrast
+
+```{r}
+df_LR33 %>%
+  lm(formula = lefthippocampus ~ alzheimerbroadcategory * gender * subjectage,
+     contrasts = list(
+       alzheimerbroadcategory = simpleCodingContrast(df_LR31$alzheimerbroadcategory),
+       gender                 = simpleCodingContrast(relevel(df_LR33$gender, ref = "M")))) %>%
+  summary()
+```
+
+
+
+
+
+### Test 3.4: two categorical and two continuous regressors without interaction
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **alzheimerbroadcategory** as first categorical predictor with 
+    - levels: **'AD', 'CN', 'Other'**
+    - ref: **'AD'**
+    
+  - **gender** as second categorical predictor with 
+    - levels: **'F', 'M'** 
+    - Ref: **'M'**
+
+  - **brainstem** as first continuous predictor 
+
+  - **opticchiasm** as second continuous predictor 
+  
+
+- data 
+
+```{r echo=FALSE, message=FALSE}
+df_LR34 <- rawData %>%
+  select(
+    lefthippocampus,
+    alzheimerbroadcategory,
+    brainstem,
+    opticchiasm,
+    gender) %>%
+  mutate(alzheimerbroadcategory = factor(alzheimerbroadcategory)) %>%
+  mutate(alzheimerbroadcategory = relevel(alzheimerbroadcategory, ref = "AD")) %>%
+  mutate(gender                 = factor(gender)) %>%
+  mutate(gender                 = relevel(gender, ref = "M")) %>%
+  drop_na() 
+head(df_LR34)
+```
+
+-- Analysis with dummy coding contrast
+
+```{r}
+df_LR34 %>%
+  lm(formula = lefthippocampus ~ alzheimerbroadcategory + gender + brainstem + opticchiasm) %>%
+  summary()
+```
+
+- Analysis with simple coding contrast
+
+```{r}
+df_LR34 %>%
+  lm(formula = lefthippocampus ~ alzheimerbroadcategory + gender + brainstem + opticchiasm,
+     contrasts = list(
+       alzheimerbroadcategory = simpleCodingContrast(df_LR31$alzheimerbroadcategory),
+       gender                 = simpleCodingContrast(relevel(df_LR33$gender, ref = "M")))) %>%
+  summary()
+```
+
+
+
+
+### Test 3.4b: two categorical and two continuous regressors with interaction
+
+In this study we use:
+
+  - **lefthippocampus** as the dependent variable
+  
+  - **alzheimerbroadcategory** as first categorical predictor with 
+    - levels: **'AD', 'CN', 'Other'**
+    - ref: **'AD'**
+    
+  - **gender** as second categorical predictor with 
+    - levels: **'F', 'M'** 
+    - Ref: **'M'**
+
+  - **brainstem** as first continuous predictor 
+
+  - **opticchiasm** as second continuous predictor 
+ 
+  - And the interaction terms 
+    - **alzheimerbroadcategory x gender** 
+    - **alzheimerbroadcategory x brainstem** 
+    - **alzheimerbroadcategory x opticchiasm** 
+    - **gender x brainstem** 
+    - **gender x opticchiasm** 
+    - **brainstem x opticchiasm** 
+    - **alzheimerbroadcategory x gender x brainstem** 
+    - **alzheimerbroadcategory x gender x opticchiasm** 
+    - **alzheimerbroadcategory x brainstem x opticchiasm** 
+    - **gender x brainstem x opticchiasm** 
+    - **alzheimerbroadcategory x gender x brainstem x opticchiasm** 
+ 
+
+
+-- Analysis with dummy coding contrast
+
+```{r}
+df_LR34 %>%
+  lm(formula = lefthippocampus ~ alzheimerbroadcategory * gender * brainstem * opticchiasm) %>%
+  summary()
+```
+
+- Analysis with simple coding contrast
+
+```{r}
+df_LR34 %>%
+  lm(formula = lefthippocampus ~ alzheimerbroadcategory * gender * brainstem * opticchiasm,
+     contrasts = list(
+       alzheimerbroadcategory = simpleCodingContrast(df_LR31$alzheimerbroadcategory),
+       gender                 = simpleCodingContrast(relevel(df_LR33$gender, ref = "M")))) %>%
+  summary()
+```
+
+
+
+# Federated calculation
+
+In this section, we must repeat the previous tests with splitted datasets of different sizes. We provide 3 datasets by test and indiced them by letter a, b or c
+
+
+
+## Tests of series 1: linear regression with categorial regressors
+
+As tibble df_LR13 contains all the variables needed by tests of section 1, we just split this tibble into three. 
+
+```{r}
+
+write_csv(df_LR13 %>% dplyr::slice(1:225), "Data/LR/df_LR1a.csv")
+write_csv(df_LR13 %>% dplyr::slice(226:426), "Data/LR/df_LR1b.csv")
+write_csv(df_LR13 %>% dplyr::slice(427:718), "Data/LR/df_LR1c.csv")
+```
+
+
+
+## Tests of series 2: linear regression with continuous regressors
+
+Variables for the first test differ from variables of other tests in this series.
+
+```{r}
+write_csv(df_LR21 %>% dplyr::slice(1:225), "Data/LR/df_LR21a.csv")
+write_csv(df_LR21 %>% dplyr::slice(226:426), "Data/LR/df_LR21b.csv")
+write_csv(df_LR21 %>% dplyr::slice(427:718), "Data/LR/df_LR21c.csv")
+```
+
+Files df_LR23... must be used for all remaining tests.
+
+```{r}
+write_csv(df_LR23 %>% dplyr::slice(1:225), "Data/LR/df_LR23a.csv")
+write_csv(df_LR23 %>% dplyr::slice(226:426), "Data/LR/df_LR23b.csv")
+write_csv(df_LR23 %>% dplyr::slice(427:718), "Data/LR/df_LR23c.csv")
+```
+
+
+
+## Tests of series 3: linear regression with mixted categorical and continuous regressors
+
+We create a new tibble df_LR4 that contains all the variables used in section 4.
+
+```{r}
+df_LR3 <- rawData %>%
+  select(
+    lefthippocampus,
+    alzheimerbroadcategory,
+    subjectage,
+    gender,
+    brainstem,
+    opticchiasm) %>%
+  mutate(alzheimerbroadcategory = factor(alzheimerbroadcategory)) %>%
+  mutate(gender = factor(gender)) %>%
+  drop_na() 
+
+write_csv(df_LR3 %>% dplyr::slice(1:225), "Data/LR/df_LR3a.csv")
+write_csv(df_LR3 %>% dplyr::slice(226:426), "Data/LR/df_LR3b.csv")
+write_csv(df_LR3 %>% dplyr::slice(427:718), "Data/LR/df_LR3c.csv")
+```
+
+
+
+
+
+
